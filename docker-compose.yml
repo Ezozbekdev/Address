@@ -1,0 +1,45 @@
+version: '3'
+
+services:  
+  addres_db:
+    image: postgres:13
+    container_name: addresspr
+    environment:
+      - POSTGRES_DB=addresdb
+      - POSTGRES_USER=addresdbuser
+      - POSTGRES_PASSWORD=addres1234
+    volumes:
+      - /var/lib/postgresql/data/
+
+  address_app:
+    build: .
+    command: python manage.py runserver 0.0.0.0:0
+    container_name: address_app
+    depends_on:
+      - addres_db
+      - redis
+    ports:
+      - "6634:6634"
+    env_file:
+      - .env
+
+  redis:
+    image: redis:6-alpine
+  
+
+  celery_worker:
+    build: .
+    container_name: django_celery_worker
+    command: celery -A blog worker -l INFO
+    volumes:
+      - .:/code
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - addres_db
+    ports:
+      - "8000:8000"
+
+volumes:
+  addres_db:
